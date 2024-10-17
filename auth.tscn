@@ -1,0 +1,10 @@
+[gd_scene load_steps=3 format=3 uid="uid://kbweuqk660th"]
+
+[ext_resource type="Script" path="res://Authentication.cs" id="1_vha6j"]
+[ext_resource type="Script" path="res://lootlocker/Runtime/Client/LootLockerNode.cs" id="2_bhgqh"]
+
+[node name="Node2D" type="Node2D"]
+script = ExtResource("1_vha6j")
+
+[node name="Node" type="Node" parent="."]
+script = ExtResource("2_bhgqh")
