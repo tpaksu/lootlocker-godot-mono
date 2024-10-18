@@ -47,7 +47,7 @@ namespace LootLockerTestConfigurationUtils
 
     public partial class LootLockerCIRetry : Node
     { 
-        public Yielder yielder = null;
+        public Yielder yielder = new();
         public void Retry(int retryAfter, string endPoint, LootLockerHTTPMethod httpMethod, string json,
             Action<LootLockerResponse> onComplete, bool useAuthToken)
         { 

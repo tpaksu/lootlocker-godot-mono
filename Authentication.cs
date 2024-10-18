@@ -10,10 +10,12 @@ public partial class Authentication : Node2D
 		{
 			if (!response.success)
 			{
-				GD.Print("failed", response.errorData);
+				GD.Print("failed");
+				GD.Print(response.errorData);
 				return;
 			}
-			GD.Print("success", LLlibs.ZeroDepJson.Json.Serialize(response));
+			GD.Print("success");
+			GD.Print(LLlibs.ZeroDepJson.Json.Serialize(response));
 		});
 	}
 

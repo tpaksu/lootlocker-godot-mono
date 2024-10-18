@@ -11,22 +11,11 @@ using Newtonsoft.Json.Linq;
 #else
 using LLlibs.ZeroDepJson;
 #endif
-#if UNITY_EDITOR
-using UnityEditor;
-#endif
 
 namespace LootLocker.Requests
 {
     public partial class LootLockerSDKManager
     {
-#if UNITY_EDITOR
-        [InitializeOnEnterPlayMode]
-        static void OnEnterPlaymodeInEditor(EnterPlayModeOptions options)
-        {
-            initialized = false;
-        }
-#endif
-
         /// <summary>
         /// Stores which platform the player currently has a session for.
         /// </summary>

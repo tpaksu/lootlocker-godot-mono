@@ -175,14 +175,11 @@ namespace LootLocker
             #region Singleton Setup
             public Yielder yielder;
             private static RemoteSessionPoller _instance;
-            public RemoteSessionPoller gameObject;
             protected static RemoteSessionPoller GetInstance()
             {
                 if (_instance == null)
                 {
                     _instance = new RemoteSessionPoller();
-                    _instance.gameObject = new RemoteSessionPoller();
-                    _instance.AddChild(_instance.gameObject);
                 }
 
                 return _instance;
@@ -192,7 +189,6 @@ namespace LootLocker
             {
                 if (_instance == null)
                     return false;
-                _instance.gameObject.Free();
                 _instance = null;
                 return true;
             }

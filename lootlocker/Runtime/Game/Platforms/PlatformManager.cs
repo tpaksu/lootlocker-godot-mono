@@ -123,14 +123,5 @@ namespace LootLocker.Requests
                 PlatformFriendlyString = PlatformFriendlyStrings[(int)platform]
             };
         }
-
-
-#if UNITY_EDITOR
-        [InitializeOnEnterPlayMode]
-        static void OnEnterPlaymodeInEditor(EnterPlayModeOptions options)
-        {
-            Reset();
-        }
-#endif
     }
 }

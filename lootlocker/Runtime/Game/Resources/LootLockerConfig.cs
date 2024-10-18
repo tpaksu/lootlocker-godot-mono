@@ -1,3 +1,4 @@
+using System.Xml.Linq;
 using Godot;
 
 namespace LootLocker
@@ -10,10 +11,14 @@ namespace LootLocker
         private static void Init()
         {
             _current = new();
+            LoadOptions();
+        }
+
+        public static ConfigFile LoadOptions()
+        {
             ConfigFile config = new ConfigFile();
-            if (Error.Ok == config.Load(current.ConfigPath))
+            if (Error.Ok == config.LoadEncryptedPass(current.ConfigPath, "dev_613ae4ff794440a0858ed27498849857") && config.HasSection(_current.SettingName))
             {
-                GD.Print("Loaded");
                 _current.apiKey = config.GetValue(_current.SettingName, "apiKey").AsString() ?? null;
                 _current.game_version = config.GetValue(_current.SettingName, "game_version", "").AsString();
                 _current.currentDebugLevel = (DebugLevel)config.GetValue(_current.SettingName, "debugLevel", (int)DebugLevel.All).AsInt32();
@@ -26,21 +31,28 @@ namespace LootLocker
             }
             else
             {
-                config.SetValue(_current.SettingName, "apiKey", _current.apiKey);
-                config.SetValue(_current.SettingName, "game_version", _current.game_version);
-                config.SetValue(_current.SettingName, "currentDebugLevel", (int)_current.currentDebugLevel);
-                config.SetValue(_current.SettingName, "allowTokenRefresh", _current.allowTokenRefresh);
-                config.SetValue(_current.SettingName, "domainKey", _current.domainKey);
-                config.SetValue(_current.SettingName, "token", _current.token);
-                config.SetValue(_current.SettingName, "refreshToken", _current.refreshToken);
-                config.SetValue(_current.SettingName, "gameID", _current.gameID);
-                config.SetValue(_current.SettingName, "deviceID", _current.deviceID);
+                config = SaveOptions(config);
             }
-            GD.Print("Saving file");
-            config.Save(current.ConfigPath);
+            return config;
         }
 
-        public static bool CreateNewSettings(string apiKey, string gameVersion, string domainKey, LootLockerConfig.DebugLevel debugLevel = DebugLevel.All, bool allowTokenRefresh = false)
+        public static ConfigFile SaveOptions(ConfigFile baseConfig = null)
+        {
+            ConfigFile config = baseConfig ?? new();
+            config.SetValue(_current.SettingName, "apiKey", _current.apiKey);
+            config.SetValue(_current.SettingName, "game_version", _current.game_version);
+            config.SetValue(_current.SettingName, "currentDebugLevel", (int)_current.currentDebugLevel);
+            config.SetValue(_current.SettingName, "allowTokenRefresh", _current.allowTokenRefresh);
+            config.SetValue(_current.SettingName, "domainKey", _current.domainKey);
+            config.SetValue(_current.SettingName, "token", _current.token);
+            config.SetValue(_current.SettingName, "refreshToken", _current.refreshToken);
+            config.SetValue(_current.SettingName, "gameID", _current.gameID);
+            config.SetValue(_current.SettingName, "deviceID", _current.deviceID);
+            config.SaveEncryptedPass(current.ConfigPath, "dev_613ae4ff794440a0858ed27498849857");
+            return config;
+        }
+
+        public static bool CreateNewSettings(string apiKey, string gameVersion, string domainKey, DebugLevel debugLevel = DebugLevel.All, bool allowTokenRefresh = false)
         {
             Init();
 
@@ -54,6 +66,7 @@ namespace LootLocker
             _current.gameID = 0;
             _current.deviceID = null;
             _current.ConstructUrls();
+            SaveOptions();
             return true;
         }
 

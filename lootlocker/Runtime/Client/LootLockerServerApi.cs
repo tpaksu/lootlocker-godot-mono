@@ -8,7 +8,6 @@ using System.Net.Http;
 using System.IO;
 using System.Threading.Tasks;
 using System.ComponentModel;
-using System.Diagnostics;
 
 namespace LootLocker.LootLockerEnums
 {
@@ -35,7 +34,7 @@ namespace LootLocker
             return _instance;
         }
 
-        public static async void SendRequest(LootLockerServerRequest request, Action<LootLockerResponse> OnServerResponse = null)
+        public static async Task SendRequest(LootLockerServerRequest request, Action<LootLockerResponse> OnServerResponse = null)
         {
             if (_instance == null)
             {
@@ -61,7 +60,6 @@ namespace LootLocker
 
                 LootLockerLogger.GetForLogLevel(LootLockerLogger.LogLevel.Verbose)("ServerRequest " + request.httpMethod + " URL: " + url);
 
-                GD.Print("url ", url);
                 using (HttpRequestMessage webRequest = CreateWebRequest(url, request))
                 {
                     bool timedOut = false, completed = false;
@@ -71,7 +69,6 @@ namespace LootLocker
                     try
                     {
                         webResponse = await client.SendAsync(webRequest);
-                        GD.Print(webRequest);
                         completed = true;
                     }
                     // Filter by InnerException.
@@ -136,8 +133,6 @@ namespace LootLocker
                         response.errorData = new LootLockerErrorData((int)webResponse.StatusCode, ResponseContent);
                     }
 
-                    GD.Print("taha", webResponse);
-
                     string RetryAfterHeader = webResponse.Headers.RetryAfter?.ToString();
                     if (!string.IsNullOrEmpty(RetryAfterHeader))
                     {
@@ -156,14 +151,14 @@ namespace LootLocker
             return (statusCode == 401 || statusCode == 403) && LootLockerConfig.current.allowTokenRefresh && CurrentPlatform.Get() != Platforms.Steam && timesRetried < MaxRetries;
         }
 
-        private static void LogResponse(LootLockerServerRequest request, long statusCode, string responseBody, float startTime, string unityWebRequestError)
+        private static void LogResponse(LootLockerServerRequest request, long statusCode, string responseBody, float startTime, string webRequestError)
         {
-            if (statusCode == 0 && string.IsNullOrEmpty(responseBody) && !string.IsNullOrEmpty(unityWebRequestError))
+            if (statusCode == 0 && string.IsNullOrEmpty(responseBody) && !string.IsNullOrEmpty(webRequestError))
             {
-                LootLockerLogger.GetForLogLevel(LootLockerLogger.LogLevel.Verbose)("Unity Web request failed, request to " +
+                LootLockerLogger.GetForLogLevel(LootLockerLogger.LogLevel.Verbose)("Web request failed, request to " +
                     request.endpoint + " completed in " +
                     (DateTimeOffset.UtcNow.ToUnixTimeSeconds() - startTime).ToString("n4") +
-                    " secs.\nWeb Request Error: " + unityWebRequestError);
+                    " secs.\nWeb Request Error: " + webRequestError);
                 return;
             }
 
@@ -224,17 +219,17 @@ namespace LootLocker
             {
                 case Platforms.Guest:
                     {
-                        LootLockerSDKManager.StartGuestSession(response =>
+                        LootLockerSDKManager.StartGuestSession(async response =>
                         {
-                            CompleteCall(cachedRequest, response, onComplete);
+                            await CompleteCall(cachedRequest, response, onComplete);
                         });
                         return;
                     }
                 case Platforms.WhiteLabel:
                     {
-                        LootLockerSDKManager.StartWhiteLabelSession(response =>
+                        LootLockerSDKManager.StartWhiteLabelSession(async response =>
                         {
-                            CompleteCall(cachedRequest, response, onComplete);
+                            await CompleteCall(cachedRequest, response, onComplete);
                         });
                         return;
                     }
@@ -242,9 +237,9 @@ namespace LootLocker
                     {
                         if (ShouldRefreshUsingRefreshToken(cachedRequest))
                         {
-                            LootLockerSDKManager.RefreshAppleGameCenterSession(response =>
+                            LootLockerSDKManager.RefreshAppleGameCenterSession(async response =>
                             {
-                                CompleteCall(cachedRequest, response, onComplete);
+                                await CompleteCall(cachedRequest, response, onComplete);
                             });
                             return;
                         }
@@ -256,9 +251,9 @@ namespace LootLocker
                     {
                         if (ShouldRefreshUsingRefreshToken(cachedRequest))
                         {
-                            LootLockerSDKManager.RefreshAppleSession(response =>
+                            LootLockerSDKManager.RefreshAppleSession(async response =>
                             {
-                                CompleteCall(cachedRequest, response, onComplete);
+                                await CompleteCall(cachedRequest, response, onComplete);
                             });
                             return;
                         }
@@ -270,9 +265,9 @@ namespace LootLocker
                     {
                         if (ShouldRefreshUsingRefreshToken(cachedRequest))
                         {
-                            LootLockerSDKManager.RefreshEpicSession(response =>
+                            LootLockerSDKManager.RefreshEpicSession(async response =>
                             {
-                                CompleteCall(cachedRequest, response, onComplete);
+                                await CompleteCall(cachedRequest, response, onComplete);
                             });
                             return;
                         }
@@ -284,9 +279,9 @@ namespace LootLocker
                     {
                         if (ShouldRefreshUsingRefreshToken(cachedRequest))
                         {
-                            LootLockerSDKManager.RefreshGoogleSession(response =>
+                            LootLockerSDKManager.RefreshGoogleSession(async response =>
                             {
-                                CompleteCall(cachedRequest, response, onComplete);
+                                await CompleteCall(cachedRequest, response, onComplete);
                             });
                             return;
                         }
@@ -298,9 +293,9 @@ namespace LootLocker
                     {
                         if (ShouldRefreshUsingRefreshToken(cachedRequest))
                         {
-                            LootLockerSDKManager.RefreshRemoteSession(response =>
+                            LootLockerSDKManager.RefreshRemoteSession(async response =>
                             {
-                                CompleteCall(cachedRequest, response, onComplete);
+                                await CompleteCall(cachedRequest, response, onComplete);
                             });
                             return;
                         }
@@ -320,9 +315,9 @@ namespace LootLocker
                 case Platforms.AmazonLuna:
                     {
                         var sessionRequest = new LootLockerSessionRequest(LootLockerConfig.current.deviceID);
-                        LootLockerAPIManager.Session(sessionRequest, (response) =>
+                        LootLockerAPIManager.Session(sessionRequest, async (response) =>
                         {
-                            CompleteCall(cachedRequest, response, onComplete);
+                            await CompleteCall(cachedRequest, response, onComplete);
                         });
                         return;
                     }
@@ -342,7 +337,7 @@ namespace LootLocker
             return (string.IsNullOrEmpty(cachedRequest.jsonPayload) || !cachedRequest.jsonPayload.Contains("refresh_token")) && !string.IsNullOrEmpty(LootLockerConfig.current.refreshToken);
         }
 
-        private async void CompleteCall(LootLockerServerRequest cachedRequest, LootLockerSessionResponse sessionRefreshResponse, Action<LootLockerResponse> onComplete)
+        private async Task CompleteCall(LootLockerServerRequest cachedRequest, LootLockerSessionResponse sessionRefreshResponse, Action<LootLockerResponse> onComplete)
         {
             if (!sessionRefreshResponse.success)
             {
@@ -373,7 +368,7 @@ namespace LootLocker
                     httpRequestMessage.Content = request.form;
                     break;
                 case LootLockerHTTPMethod.UPDATE_FILE:
-                    // Workaround for UnityWebRequest with PUT HTTP verb not having form fields
+                    // Workaround for WebRequest with PUT HTTP verb not having form fields
                     httpRequestMessage = new(HttpMethod.Put, url);
                     httpRequestMessage.Content = request.form;
                     break;

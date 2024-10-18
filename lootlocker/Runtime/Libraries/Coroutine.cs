@@ -1,13 +1,13 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Godot;
 
 // author: alex@rozgo.com
 // license: have fun
 
-// mystical Unity class
 public class YieldInstruction
 {
     internal IEnumerator routine = null;
@@ -19,7 +19,7 @@ public class YieldInstruction
 
     internal bool MoveNext()
     {
-        var yieldInstruction = (asyncRoutine != null ? asyncRoutine.Current : routine.Current) as YieldInstruction;
+        var yieldInstruction = routine.Current as YieldInstruction;
 
         if (yieldInstruction != null)
         {
@@ -48,7 +48,7 @@ public class YieldInstruction
 
     internal async Task<bool> MoveNextAsync()
     {
-        var yieldInstruction = (asyncRoutine != null ? asyncRoutine.Current : routine.Current) as YieldInstruction;
+        var yieldInstruction = asyncRoutine as YieldInstruction;
 
         if (yieldInstruction != null)
         {
@@ -157,48 +157,48 @@ public class WaitUntil : YieldInstruction
     }
 }
 
-// use this as the base class for enabled coroutines
 public class Yielder
 {
+    internal Queue<YieldInstruction> coroutines = new Queue<YieldInstruction>();
 
-    internal List<YieldInstruction> coroutines = new List<YieldInstruction>();
-
-    // just like Unity's MonoBehaviour.StartCoroutine
     public Coroutine StartCoroutine(IEnumerator routine)
     {
         var coroutine = new Coroutine(routine);
         coroutine.routine.MoveNext();
-        coroutines.Add(coroutine);
+        coroutines.Enqueue(coroutine);
         return coroutine;
     }
 
-    // just like Unity's MonoBehaviour.StartCoroutine
     public async Task<AsyncCoroutine> StartAsyncCoroutine(IAsyncEnumerator<object> routine)
     {
         var coroutine = new AsyncCoroutine(routine);
         await coroutine.asyncRoutine.MoveNextAsync();
-        coroutines.Add(coroutine);
+        coroutines.Enqueue(coroutine);
         return coroutine;
     }
 
-    // call this every frame
+    // Note: call this every frame
     public async void ProcessCoroutines()
     {
-        for (int i = 0; i < coroutines.Count;)
+        if (coroutines.Count == 0) return;
+        while (coroutines.Count > 0)
         {
-            var coroutine = coroutines[i];
-            if (coroutine is Coroutine && coroutine.MoveNext())
+            var coroutine = coroutines.First();
+            if (coroutine is Coroutine)
             {
-                ++i;
+                coroutine.MoveNext();
+                coroutines.Dequeue();
             }
-            else if (coroutine is AsyncCoroutine && await coroutine.MoveNextAsync())
+            else if (coroutine is AsyncCoroutine)
             {
-                ++i;
+                await coroutine.MoveNextAsync();
+                coroutines.Dequeue();
             }
             else if (coroutines.Count > 1)
             {
-                coroutines[i] = coroutines[coroutines.Count - 1];
-                coroutines.RemoveAt(coroutines.Count - 1);
+                // Removing it from the list, as it doesn's seem
+                // like a Coroutine.
+                coroutines.Dequeue();
             }
             else
             {

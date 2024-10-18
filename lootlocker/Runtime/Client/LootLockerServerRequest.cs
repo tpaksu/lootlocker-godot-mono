@@ -4,6 +4,8 @@ using LootLocker.LootLockerEnums;
 using System.Net.Http;
 using System.Linq;
 using Godot.NativeInterop;
+using System.Threading.Tasks;
+
 
 
 #if LOOTLOCKER_USE_NEWTONSOFTJSON
@@ -270,7 +272,7 @@ namespace LootLocker
         public LootLockerErrorData errorData { get; set; }
 
         /// <summary>
-        /// inheritdoc added this because unity main thread executing style cut the calling stack and make the event orphan see also calling multiple events 
+        /// inheritdoc added this because main thread executing style cut the calling stack and make the event orphan see also calling multiple events
         /// of the same type makes use unable to identify each one
         /// </summary>
         public string EventId { get; set; }
@@ -622,7 +624,7 @@ namespace LootLocker
 
         #region Make ServerRequest and call send (3 functions)
 
-        public static void CallAPI(string endPoint, LootLockerHTTPMethod httpMethod, string body = null, Action<LootLockerResponse> onComplete = null, bool useAuthToken = true, LootLocker.LootLockerEnums.LootLockerCallerRole callerRole = LootLocker.LootLockerEnums.LootLockerCallerRole.User, Dictionary<string, string> additionalHeaders = null)
+        public static async void CallAPI(string endPoint, LootLockerHTTPMethod httpMethod, string body = null, Action<LootLockerResponse> onComplete = null, bool useAuthToken = true, LootLocker.LootLockerEnums.LootLockerCallerRole callerRole = LootLocker.LootLockerEnums.LootLockerCallerRole.User, Dictionary<string, string> additionalHeaders = null)
         {
             if (RateLimiter.Get().AddRequestAndCheckIfRateLimitHit())
             {
@@ -655,10 +657,10 @@ namespace LootLocker
                 }
             }
 
-            new LootLockerServerRequest(endPoint, httpMethod, body, headers, callerRole: callerRole).Send((response) => { onComplete?.Invoke(response); });
+            await new LootLockerServerRequest(endPoint, httpMethod, body, headers, callerRole: callerRole).Send((response) => { onComplete?.Invoke(response); });
         }
 
-        public static void CallDomainAuthAPI(string endPoint, LootLockerHTTPMethod httpMethod, string body = null, Action<LootLockerResponse> onComplete = null)
+        public static async void CallDomainAuthAPI(string endPoint, LootLockerHTTPMethod httpMethod, string body = null, Action<LootLockerResponse> onComplete = null)
         {
             if (RateLimiter.Get().AddRequestAndCheckIfRateLimitHit())
             {
@@ -681,10 +683,10 @@ namespace LootLocker
                 headers.Add("is-development", "true");
             }
 
-            new LootLockerServerRequest(endPoint, httpMethod, body, headers, callerRole: LootLockerCallerRole.Base).Send((response) => { onComplete?.Invoke(response); });
+            await new LootLockerServerRequest(endPoint, httpMethod, body, headers, callerRole: LootLockerCallerRole.Base).Send((response) => { onComplete?.Invoke(response); });
         }
 
-        public static void UploadFile(string endPoint, LootLockerHTTPMethod httpMethod, byte[] file, string fileName = "file", string fileContentType = "text/plain", Dictionary<string, string> body = null, Action<LootLockerResponse> onComplete = null, bool useAuthToken = true, LootLocker.LootLockerEnums.LootLockerCallerRole callerRole = LootLocker.LootLockerEnums.LootLockerCallerRole.User)
+        public static async void UploadFile(string endPoint, LootLockerHTTPMethod httpMethod, byte[] file, string fileName = "file", string fileContentType = "text/plain", Dictionary<string, string> body = null, Action<LootLockerResponse> onComplete = null, bool useAuthToken = true, LootLocker.LootLockerEnums.LootLockerCallerRole callerRole = LootLocker.LootLockerEnums.LootLockerCallerRole.User)
         {
             if (RateLimiter.Get().AddRequestAndCheckIfRateLimitHit())
             {
@@ -704,7 +706,7 @@ namespace LootLocker
                 headers.Add(callerRole == LootLockerCallerRole.Admin ? "x-auth-token" : "x-session-token", LootLockerConfig.current.token);
             }
 
-            new LootLockerServerRequest(endPoint, httpMethod, file, fileName, fileContentType, body, headers, callerRole: callerRole).Send((response) => { onComplete?.Invoke(response); });
+            await new LootLockerServerRequest(endPoint, httpMethod, file, fileName, fileContentType, body, headers, callerRole: callerRole).Send((response) => { onComplete?.Invoke(response); });
         }
 
         public static void UploadFile(EndPointClass endPoint, byte[] file, string fileName = "file", string fileContentType = "text/plain", Dictionary<string, string> body = null, Action<LootLockerResponse> onComplete = null,
@@ -794,9 +796,9 @@ namespace LootLocker
         /// <summary>
         /// just debug and call ServerAPI.SendRequest which takes the current ServerRequest and pass this response
         /// </summary>
-        public void Send(System.Action<LootLockerResponse> OnServerResponse)
+        public async Task Send(System.Action<LootLockerResponse> OnServerResponse)
         {
-            LootLockerServerApi.SendRequest(this, (response) => { OnServerResponse?.Invoke(response); });
+            await LootLockerServerApi.SendRequest(this, (response) => { OnServerResponse?.Invoke(response); });
         }
     }
 }

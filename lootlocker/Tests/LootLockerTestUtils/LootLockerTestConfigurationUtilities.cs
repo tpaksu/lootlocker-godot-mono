@@ -4,6 +4,8 @@ namespace LootLockerTestConfigurationUtils
 {
     public class LootLockerTestConfigurationUtilities
     {
+        private static RandomNumberGenerator random = new();
+
         private static readonly string[] OneHundredNouns = { "time", "year", "people", "way", "day", "man", "thing", "woman", "life", "child", "world", "school",
             "state", "family", "student", "group", "country", "problem", "hand", "part", "place", "case", "week",
             "company", "system", "program", "question", "work", "government", "number", "night", "point", "home",
@@ -28,12 +30,12 @@ namespace LootLockerTestConfigurationUtils
 
         public static string GetRandomNoun()
         {
-            return OneHundredNouns[(int)new RandomNumberGenerator().RandfRange(0, 99)];
+            return OneHundredNouns[(int)random.RandfRange(0, 99)];
         }
 
         public static string GetRandomVerb()
         {
-            return OneHundredVerbs[(int)new RandomNumberGenerator().RandfRange(0, 99)];
+            return OneHundredVerbs[(int)random.RandfRange(0, 99)];
         }
     }
 }
